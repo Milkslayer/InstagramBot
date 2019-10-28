@@ -9,17 +9,33 @@ from random import Random
 import bs4 as bs
 import time
 import re
+import json
+from pathlib import Path
 
 
 class InstagramBot:
-    def __init__(self, username, password, driver_path=r"..\chromedriver\chromedriver.exe"):
-        self.__username = username
-        self.__password = password
+    def __init__(self, username=None, password=None, driver_path=r"..\chromedriver\chromedriver.exe"):
+        """
+        Constructor of the InstagramBot class.
+        If no credentials are passed to the constructor it is expected to
+        have a 'credentials.json' file in the same directory as the app.
+        :param username: Instagram account name
+        :param password: Instagram account password
+        :param driver_path: Path to the compatible chrome driver
+        """
+        if username or password is None:
+            with open('credentials.json', 'r') as file:
+                obj = json.loads(file.read())
+                self.__username = obj['login']
+                self.__password = obj['password']
+        else:
+            self.__username = username
+            self.__password = password
         self.__driver = webdriver.Chrome(executable_path=driver_path)
         self.DEFAULT_TIMEOUT = 3  # seconds
         self.__rand = Random()
 
-    def login(self):
+    def login(self) -> None:
         """
         Logs the bot in to the default page of Instagram
         :returns True if Log in was successful, else Raise error
@@ -40,7 +56,7 @@ class InstagramBot:
             print("ERROR: Could not log in")
             raise
 
-    def __check_notification_popup(self):
+    def __check_notification_popup(self) -> bool:
         """
         Sometimes a pop-up appears, when you log in to Instagram, asking about notifications.
         This function gets rid of it by clicking "Not Now"
@@ -106,3 +122,28 @@ class InstagramBot:
         except TimeoutException:
             print("ERROR: Something unexpected happened while extracting followers")
             raise
+
+    @staticmethod
+    def export_list(_list: list, file_path: str = './output', exported_file_extension: str = ".json") -> bool:
+        """
+        Exports provided list to a file
+        :param _list: list of variables, preferably list of follower/following ids
+        :param file_path: name of exported file
+        :param exported_file_extension: file format
+        :returns: True if successful export, else False
+        """
+        try:
+            path = Path(file_path + exported_file_extension)
+            if path.is_file():
+                raise FileExistsError
+            with open(file_path + exported_file_extension, 'w') as file:
+                if exported_file_extension == ".json":
+                    json.dump(_list, file)
+                    return True
+                elif exported_file_extension == '.txt':
+                    file.write("\n".join(str(item) for item in _list))
+                    return True
+
+        except FileExistsError:
+            print("File Already exists")
+            return False

@@ -1,5 +1,7 @@
 /.idea
 /__pycache__
 /venv
+
+credentials.json
 test.py
 app.py
